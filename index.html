@@ -1,0 +1,2062 @@
+<html lang="en" class="scroll-smooth" >
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TraderZero Backtesting Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+<style>
+  html, body {
+    font-family: 'Poppins', 'Inter', sans-serif;
+    background-color: #0a0a0a;
+    color: #e0e6f0;
+    height: 100%;
+    margin: 0;
+    overflow-x: hidden;
+  }
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #111;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #0ff;
+    border-radius: 10px;
+  }
+  /* Neon glow */
+  .neon-blue {
+    color: #00ffff;
+    text-shadow:
+      0 0 5px #00ffff,
+      0 0 10px #00ffff,
+      0 0 20px #00ffff,
+      0 0 40px #00ffff;
+  }
+  .neon-red {
+    color: #ff0033;
+    text-shadow:
+      0 0 5px #ff0033,
+      0 0 10px #ff0033,
+      0 0 20px #ff0033,
+      0 0 40px #ff0033;
+  }
+  /* Glow on hover */
+  .glow-blue-hover:hover {
+    box-shadow:
+      0 0 8px #00ffff,
+      0 0 16px #00ffff,
+      0 0 24px #00ffff;
+  }
+  /* Rounded 2xl + soft shadow */
+  .rounded-2xl-soft {
+    border-radius: 1rem;
+    box-shadow: 0 4px 15px rgba(0,255,255,0.3);
+  }
+  /* Fade slide animation */
+  @keyframes fadeSlideIn {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .fade-slide-in {
+    animation: fadeSlideIn 0.5s ease forwards;
+  }
+  /* Toast */
+  #toast-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 9999;
+  }
+  .toast {
+    background: #111;
+    border-left: 4px solid #00ffff;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 0.75rem;
+    border-radius: 1rem;
+    box-shadow: 0 0 10px #00ffffaa;
+    color: #e0e6f0;
+    font-weight: 600;
+    min-width: 220px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    opacity: 0;
+    transform: translateX(100%);
+    animation: toastIn 0.4s forwards;
+  }
+  @keyframes toastIn {
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  /* Modal backdrop */
+  .modal-backdrop {
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(6px);
+  }
+  /* Table row glowing on hover */
+  tbody tr:hover {
+    box-shadow:
+      0 0 10px 2px #00ffffaa;
+    background-color: #001f2f;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  /* Zebra rows */
+  tbody tr:nth-child(even) {
+    background-color: rgba(0,255,255,0.05);
+  }
+  /* Sticky header */
+  thead th {
+    position: sticky;
+    top: 0;
+    background-color: #000a0a;
+    z-index: 10;
+    border-bottom: 2px solid #00ffff;
+    cursor: pointer;
+    user-select: none;
+  }
+  thead th:hover {
+    background-color: #003344;
+  }
+  /* Scrollbar for table */
+  .table-scroll {
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  /* Dark mode star background */
+  .stars-bg {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  /* Neon button */
+  .btn-neon {
+    background-color: #000;
+    border: 2px solid #00ffff;
+    color: #00ffff;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+  .btn-neon:hover {
+    background-color: #00ffff;
+    color: #000;
+    box-shadow:
+      0 0 8px #00ffff,
+      0 0 16px #00ffff,
+      0 0 24px #00ffff;
+  }
+  /* Input focus neon */
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #00ffff;
+    box-shadow:
+      0 0 8px #00ffff;
+    background-color: #111;
+    color: #e0e6f0;
+  }
+  /* Scrollbar for modal content */
+  .modal-content-scroll {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  /* Neon icon */
+  .icon-neon {
+    color: #00ffff;
+    transition: color 0.3s ease;
+  }
+  .icon-neon:hover {
+    color: #ff0033;
+  }
+  /* Neon red button */
+  .btn-red-neon {
+    background-color: #000;
+    border: 2px solid #ff0033;
+    color: #ff0033;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+  .btn-red-neon:hover {
+    background-color: #ff0033;
+    color: #000;
+    box-shadow:
+      0 0 8px #ff0033,
+      0 0 16px #ff0033,
+      0 0 24px #ff0033;
+  }
+  /* Scrollbar for table scroll */
+  .table-scroll::-webkit-scrollbar {
+    width: 8px;
+  }
+  .table-scroll::-webkit-scrollbar-track {
+    background: #111;
+  }
+  .table-scroll::-webkit-scrollbar-thumb {
+    background: #00ffff;
+    border-radius: 10px;
+  }
+  /* Dark mode styles */
+  .dark body {
+    background-color: #000;
+    color: #a0cfff;
+  }
+  .dark thead th {
+    background-color: #001a1a;
+    border-bottom-color: #00ffff;
+  }
+  .dark tbody tr:nth-child(even) {
+    background-color: rgba(0,255,255,0.1);
+  }
+  /* Dark mode star background */
+  .stars-bg.dark {
+    background: radial-gradient(ellipse at center, #0ff 1px, transparent 1px),
+                radial-gradient(ellipse at center, #f00 1px, transparent 1px);
+    background-position: 0 0, 25px 25px;
+    background-size: 50px 50px;
+    opacity: 0.15;
+  }
+  /* Smooth transitions */
+  * {
+    transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  /* Header logo */
+  #headerLogo {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 900;
+    font-size: 2.5rem;
+    letter-spacing: 0.15em;
+    user-select: none;
+  }
+  #headerLogo span.tz-blue {
+    color: #00ffff;
+    text-shadow:
+      0 0 5px #00ffff,
+      0 0 10px #00ffff,
+      0 0 20px #00ffff;
+  }
+  #headerLogo span.tz-red {
+    color: #ff0033;
+    text-shadow:
+      0 0 5px #ff0033,
+      0 0 10px #ff0033,
+      0 0 20px #ff0033;
+  }
+  #headerLogo small {
+    display: block;
+    font-size: 0.75rem;
+    color: #00ffffaa;
+    letter-spacing: 0.2em;
+    margin-top: -0.25rem;
+  }
+  /* Sidebar */
+  aside {
+    background-color: #000a0a;
+    border-right: 1px solid #00ffffaa;
+  }
+  aside button {
+    font-weight: 600;
+  }
+  aside button.active {
+    background-color: #003344;
+    color: #00ffff;
+    box-shadow:
+      0 0 8px #00ffff,
+      0 0 16px #00ffff;
+  }
+  /* Responsive */
+  @media (max-width: 768px) {
+    aside {
+      width: 100%;
+      border-right: none;
+      border-bottom: 1px solid #00ffffaa;
+      display: flex;
+      overflow-x: auto;
+    }
+    aside button {
+      flex: 1 0 auto;
+      text-align: center;
+      border-radius: 0;
+      border-right: 1px solid #00ffffaa;
+    }
+    aside button:last-child {
+      border-right: none;
+    }
+  }
+  /* Dashboard & Add Entry & Export & Backup & Restore container alignment */
+  #sectionDashboard > div.grid,
+  #sectionAddEntry > form,
+  #sectionExport > div,
+  #sectionBackupRestore > div,
+  #sectionHelp > div {
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* Data Table container alignment */
+  #sectionDataTable > div:first-child,
+  #sectionDataTable > div.table-scroll {
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* Table cell text alignment for numbers */
+  td:nth-child(6),
+  td:nth-child(7),
+  td:nth-child(8) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Table header alignment for numbers */
+  th:nth-child(6),
+  th:nth-child(7),
+  th:nth-child(8) {
+    text-align: right;
+  }
+  /* Truncate Alasan Entry with tooltip */
+  td:nth-child(9) {
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
+</head>
+<body class="relative min-h-screen flex flex-col bg-black text-gray-200">
+
+<!-- Overlay Trading Background Canvas -->
+<canvas id="overlayChart" class="fixed top-0 left-0 w-full h-full -z-10 opacity-20" aria-label="Animated trading chart background with neon blue and red candlesticks and line chart" role="img"></canvas>
+
+<!-- Stars background for dark mode -->
+<div id="starsBg" class="stars-bg"></div>
+
+<!-- Splash Screen -->
+<div id="splashScreen" class="fixed inset-0 bg-black flex flex-col justify-center items-center z-50 select-none">
+  <h1 id="splashLogo" class="text-7xl font-extrabold neon-blue tracking-widest" style="font-family: 'Poppins', sans-serif; user-select:none;">
+    <span class="tz-blue">T</span><span class="tz-red">Z</span>
+  </h1>
+  <small class="mt-4 text-gray-400 font-semibold tracking-widest">TraderZero</small>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<!-- Main App Container -->
+<div id="app" class="flex flex-col md:flex-row flex-1 min-h-screen max-w-full overflow-hidden" style="display:none;">
+
+  <!-- Sidebar -->
+  <aside class="w-full md:w-64 flex flex-row md:flex-col select-none z-20">
+    <button id="navDashboard" class="flex-1 md:flex-none md:w-full px-4 py-3 border-b md:border-b-0 md:border-r border-cyan-600/40 text-cyan-400 hover:bg-cyan-900/20 rounded-none md:rounded-2xl-soft transition-colors duration-300 font-semibold active" aria-current="page" type="button" aria-label="Dashboard">
+      <i class="fas fa-chart-line icon-neon mr-2"></i> Dashboard
+    </button>
+    <button id="navAddEntry" class="flex-1 md:flex-none md:w-full px-4 py-3 border-b md:border-b-0 md:border-r border-cyan-600/40 text-cyan-400 hover:bg-cyan-900/20 rounded-none md:rounded-2xl-soft transition-colors duration-300 font-semibold" type="button" aria-label="Add Entry">
+      <i class="fas fa-plus-circle icon-neon mr-2"></i> Add Entry
+    </button>
+    <button id="navDataTable" class="flex-1 md:flex-none md:w-full px-4 py-3 border-b md:border-b-0 md:border-r border-cyan-600/40 text-cyan-400 hover:bg-cyan-900/20 rounded-none md:rounded-2xl-soft transition-colors duration-300 font-semibold" type="button" aria-label="Data Table">
+      <i class="fas fa-table icon-neon mr-2"></i> Data Table
+    </button>
+    <button id="navExport" class="flex-1 md:flex-none md:w-full px-4 py-3 border-b md:border-b-0 md:border-r border-cyan-600/40 text-cyan-400 hover:bg-cyan-900/20 rounded-none md:rounded-2xl-soft transition-colors duration-300 font-semibold" type="button" aria-label="Export Data">
+      <i class="fas fa-file-export icon-neon mr-2"></i> Export
+    </button>
+    <button id="navBackupRestore" class="flex-1 md:flex-none md:w-full px-4 py-3 border-b md:border-b-0 md:border-r border-cyan-600/40 text-cyan-400 hover:bg-cyan-900/20 rounded-none md:rounded-2xl-soft transition-colors duration-300 font-semibold" type="button" aria-label="Backup and Restore">
+      <i class="fas fa-cloud-upload-alt icon-neon mr-2"></i> Backup & Restore
+    </button>
+    <button id="navHelp" class="flex-1 md:flex-none md:w-full px-4 py-3 border-b md:border-b-0 md:border-r border-cyan-600/40 text-cyan-400 hover:bg-cyan-900/20 rounded-none md:rounded-2xl-soft transition-colors duration-300 font-semibold" type="button" aria-label="Help">
+      <i class="fas fa-info-circle icon-neon mr-2"></i> Help
+    </button>
+    <button id="navSettings" class="flex-1 md:flex-none md:w-full px-4 py-3 text-cyan-400 hover:bg-cyan-900/20 rounded-none md:rounded-2xl-soft transition-colors duration-300 font-semibold mt-auto" type="button" aria-label="Settings">
+      <i class="fas fa-cog icon-neon mr-2"></i> Settings
+    </button>
+    <button id="logoutBtn" class="btn-red-neon px-4 py-2 rounded-2xl-soft text-sm font-semibold flex items-center gap-2 mx-4 my-4 md:mx-6 md:my-6" type="button" aria-label="Logout">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </button>
+  </aside>
+
+  <!-- Content Area -->
+  <main class="flex-1 flex flex-col overflow-hidden p-6 md:p-8 relative z-10">
+
+    <!-- Header -->
+    <header class="flex items-center justify-between mb-6 select-none">
+      <div id="headerLogo" aria-label="TraderZero logo with TZ letters and TraderZero text" role="img">
+        <span class="tz-blue">T</span><span class="tz-red">Z</span>
+        <small>TraderZero</small>
+      </div>
+      <div class="flex items-center gap-4">
+        <div id="userDisplay" class="text-cyan-400 font-semibold text-lg select-text" aria-live="polite"></div>
+        <button id="darkModeToggle" aria-label="Toggle dark mode" class="text-cyan-400 hover:text-red-500 transition-colors duration-300 text-2xl" title="Toggle dark mode">
+          <i id="darkModeIcon" class="fas fa-moon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Sections -->
+    <section id="sectionDashboard" class="fade-slide-in">
+
+      <!-- Statistics Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8 max-w-[900px] mx-auto">
+        <div class="bg-black bg-opacity-70 rounded-2xl-soft p-6 shadow-md flex flex-col items-center">
+          <i class="fas fa-list-alt text-cyan-400 text-4xl mb-2"></i>
+          <div class="text-cyan-400 text-4xl font-bold countup" id="statTotal">0</div>
+          <div class="mt-2 text-gray-400 uppercase tracking-widest font-semibold text-sm">Total Entries</div>
+        </div>
+        <div class="bg-black bg-opacity-70 rounded-2xl-soft p-6 shadow-md flex flex-col items-center">
+          <i class="fas fa-trophy text-blue-400 text-4xl mb-2"></i>
+          <div class="text-blue-400 text-4xl font-bold countup" id="statWin">0</div>
+          <div class="mt-2 text-gray-400 uppercase tracking-widest font-semibold text-sm">Wins</div>
+        </div>
+        <div class="bg-black bg-opacity-70 rounded-2xl-soft p-6 shadow-md flex flex-col items-center">
+          <i class="fas fa-times-circle text-red-500 text-4xl mb-2"></i>
+          <div class="text-red-500 text-4xl font-bold countup" id="statLoss">0</div>
+          <div class="mt-2 text-gray-400 uppercase tracking-widest font-semibold text-sm">Losses</div>
+        </div>
+        <div class="bg-black bg-opacity-70 rounded-2xl-soft p-6 shadow-md flex flex-col items-center">
+          <i class="fas fa-percentage text-cyan-400 text-4xl mb-2"></i>
+          <div class="text-cyan-400 text-4xl font-bold countup" id="statWinrate">0%</div>
+          <div class="mt-2 text-gray-400 uppercase tracking-widest font-semibold text-sm">Winrate</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[900px] mx-auto">
+        <div class="bg-black bg-opacity-70 rounded-2xl-soft p-6 shadow-md">
+          <h2 class="text-cyan-400 font-semibold mb-4 uppercase tracking-wide">Winrate Over Time</h2>
+          <canvas id="lineChart" aria-label="Line chart showing winrate progression over time" role="img"></canvas>
+          <div class="mt-4 flex gap-4 justify-center">
+            <button id="btnWeekly" class="btn-neon px-4 py-2 rounded-2xl-soft font-semibold active">Weekly</button>
+            <button id="btnMonthly" class="btn-neon px-4 py-2 rounded-2xl-soft font-semibold">Monthly</button>
+          </div>
+        </div>
+        <div class="bg-black bg-opacity-70 rounded-2xl-soft p-6 shadow-md">
+          <h2 class="text-cyan-400 font-semibold mb-4 uppercase tracking-wide">Win vs Loss Ratio</h2>
+          <canvas id="pieChart" aria-label="Pie chart showing ratio of wins versus losses" role="img"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <section id="sectionAddEntry" class="hidden fade-slide-in max-w-[900px] mx-auto">
+
+      <h2 class="text-cyan-400 font-semibold text-2xl mb-6 uppercase tracking-wide text-center">Add New Entry</h2>
+
+      <form id="entryForm" class="bg-black bg-opacity-70 rounded-2xl-soft p-6 shadow-md grid grid-cols-1 md:grid-cols-2 gap-6" novalidate>
+
+        <div class="flex flex-col">
+          <label for="teknik" class="mb-1 text-gray-300 font-semibold">Teknik</label>
+          <input type="text" id="teknik" name="teknik" required placeholder="e.g. Moving Average" class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200" />
+          <p class="text-red-500 text-xs mt-1 hidden" id="errorTeknik">Teknik tidak boleh kosong.</p>
+        </div>
+
+        <div class="flex flex-col">
+          <label for="jamEntry" class="mb-1 text-gray-300 font-semibold">Jam Entry</label>
+          <input type="time" id="jamEntry" name="jamEntry" required class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200" />
+          <p class="text-red-500 text-xs mt-1 hidden" id="errorJamEntry">Jam Entry harus diisi.</p>
+        </div>
+
+        <div class="flex flex-col">
+          <label for="posisi" class="mb-1 text-gray-300 font-semibold">Posisi</label>
+          <select id="posisi" name="posisi" required class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200">
+            <option value="" disabled selected>Select position</option>
+            <option value="Buy">Buy</option>
+            <option value="Sell">Sell</option>
+          </select>
+          <p class="text-red-500 text-xs mt-1 hidden" id="errorPosisi">Posisi harus dipilih.</p>
+        </div>
+
+        <div class="flex flex-col">
+          <label for="pair" class="mb-1 text-gray-300 font-semibold">Pair</label>
+          <input type="text" id="pair" name="pair" required placeholder="e.g. BTC/USD" class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200" />
+          <p class="text-red-500 text-xs mt-1 hidden" id="errorPair">Pair tidak boleh kosong.</p>
+        </div>
+
+        <div class="flex flex-col">
+          <label for="entryPrice" class="mb-1 text-gray-300 font-semibold">Entry Price</label>
+          <input type="number" step="any" id="entryPrice" name="entryPrice" required placeholder="e.g. 45000" class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200" />
+          <p class="text-red-500 text-xs mt-1 hidden" id="errorEntryPrice">Entry Price harus angka valid.</p>
+        </div>
+
+        <div class="flex flex-col">
+          <label for="stopLoss" class="mb-1 text-gray-300 font-semibold">Stop Loss</label>
+          <input type="number" step="any" id="stopLoss" name="stopLoss" required placeholder="e.g. 44000" class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200" />
+          <p class="text-red-500 text-xs mt-1 hidden" id="errorStopLoss">Stop Loss harus angka valid.</p>
+        </div>
+
+        <div class="flex flex-col">
+          <label for="takeProfit" class="mb-1 text-gray-300 font-semibold">Take Profit</label>
+          <input type="number" step="any" id="takeProfit" name="takeProfit" required placeholder="e.g. 46000" class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200" />
+          <p class="text-red-500 text-xs mt-1 hidden" id="errorTakeProfit">Take Profit harus angka valid.</p>
+        </div>
+
+        <div class="flex flex-col md:col-span-2">
+          <label for="alasanEntry" class="mb-1 text-gray-300 font-semibold">Alasan Entry</label>
+          <textarea id="alasanEntry" name="alasanEntry" rows="3" required placeholder="Reason for entry" class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200 resize-none"></textarea>
+          <p class="text-red-500 text-xs mt-1 hidden" id="errorAlasanEntry">Alasan Entry tidak boleh kosong.</p>
+        </div>
+
+        <div class="flex flex-col md:col-span-2">
+          <label for="hasil" class="mb-1 text-gray-300 font-semibold">Hasil</label>
+          <select id="hasil" name="hasil" required class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200">
+            <option value="" disabled selected>Select result</option>
+            <option value="Win">Win</option>
+            <option value="Loss">Loss</option>
+          </select>
+          <p class="text-red-500 text-xs mt-1 hidden" id="errorHasil">Hasil harus dipilih.</p>
+        </div>
+
+        <div class="md:col-span-2 flex justify-end">
+          <button type="submit" class="btn-neon px-6 py-3 rounded-2xl-soft text-lg font-semibold flex items-center gap-3">
+            <i class="fas fa-plus-circle"></i> Tambah Entry
+          </button>
+        </div>
+
+      </form>
+    </section>
+
+    <section id="sectionDataTable" class="hidden fade-slide-in flex flex-col max-w-full overflow-x-auto">
+
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4 max-w-[1100px] mx-auto">
+        <h2 class="text-cyan-400 font-semibold text-2xl uppercase tracking-wide">Data Entries</h2>
+        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <input type="text" id="searchInput" placeholder="Search Teknik, Pair, Hasil..." aria-label="Search entries" class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200 w-full sm:w-64" />
+          <select id="filterResult" aria-label="Filter by result" class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200 w-full sm:w-48">
+            <option value="all">All Results</option>
+            <option value="Win">Win</option>
+            <option value="Loss">Loss</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-scroll rounded-2xl-soft shadow-md border border-cyan-600/40 max-w-[1100px] mx-auto">
+        <table class="min-w-full text-left text-gray-300 border-collapse" aria-describedby="tableDescription" id="entriesTable">
+          <thead>
+            <tr>
+              <th scope="col" class="px-4 py-3 font-semibold text-cyan-400 rounded-tl-2xl-soft" data-sort="index" tabindex="0" aria-label="Sort by number"># <i class="fas fa-sort"></i></th>
+              <th scope="col" class="px-4 py-3 font-semibold text-cyan-400" data-sort="teknik" tabindex="0" aria-label="Sort by Teknik">Teknik <i class="fas fa-sort"></i></th>
+              <th scope="col" class="px-4 py-3 font-semibold text-cyan-400" data-sort="jamEntry" tabindex="0" aria-label="Sort by Jam Entry">Jam Entry <i class="fas fa-sort"></i></th>
+              <th scope="col" class="px-4 py-3 font-semibold text-cyan-400" data-sort="posisi" tabindex="0" aria-label="Sort by Posisi">Posisi <i class="fas fa-sort"></i></th>
+              <th scope="col" class="px-4 py-3 font-semibold text-cyan-400" data-sort="pair" tabindex="0" aria-label="Sort by Pair">Pair <i class="fas fa-sort"></i></th>
+              <th scope="col" class="px-4 py-3 font-semibold text-cyan-400 text-right" data-sort="entryPrice" tabindex="0" aria-label="Sort by Entry Price">Entry Price <i class="fas fa-sort"></i></th>
+              <th scope="col" class="px-4 py-3 font-semibold text-cyan-400 text-right" data-sort="stopLoss" tabindex="0" aria-label="Sort by Stop Loss">Stop Loss <i class="fas fa-sort"></i></th>
+              <th scope="col" class="px-4 py-3 font-semibold text-cyan-400 text-right" data-sort="takeProfit" tabindex="0" aria-label="Sort by Take Profit">Take Profit <i class="fas fa-sort"></i></th>
+              <th scope="col" class="px-4 py-3 font-semibold text-cyan-400" data-sort="alasanEntry" tabindex="0" aria-label="Sort by Alasan Entry">Alasan Entry <i class="fas fa-sort"></i></th>
+              <th scope="col" class="px-4 py-3 font-semibold text-cyan-400" data-sort="hasil" tabindex="0" aria-label="Sort by Hasil">Hasil <i class="fas fa-sort"></i></th>
+              <th scope="col" class="px-4 py-3 font-semibold text-cyan-400 rounded-tr-2xl-soft">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="entriesTableBody" class="divide-y divide-cyan-600/30" tabindex="0" aria-live="polite" aria-relevant="additions removals">
+            <!-- Entries rows inserted here -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="sectionExport" class="hidden fade-slide-in max-w-[900px] mx-auto">
+
+      <h2 class="text-cyan-400 font-semibold text-2xl mb-6 uppercase tracking-wide text-center">Export Data</h2>
+
+      <div class="flex flex-col sm:flex-row gap-6 justify-center">
+        <button id="exportCSV" class="btn-neon px-6 py-3 rounded-2xl-soft text-lg font-semibold flex items-center gap-3 justify-center w-full sm:w-auto" aria-label="Export data to CSV">
+          <i class="fas fa-file-csv"></i> Export CSV
+        </button>
+        <button id="exportExcel" class="btn-neon px-6 py-3 rounded-2xl-soft text-lg font-semibold flex items-center gap-3 justify-center w-full sm:w-auto" aria-label="Export data to Excel">
+          <i class="fas fa-file-excel"></i> Export Excel
+        </button>
+        <button id="exportPDF" class="btn-neon px-6 py-3 rounded-2xl-soft text-lg font-semibold flex items-center gap-3 justify-center w-full sm:w-auto" aria-label="Export data to PDF">
+          <i class="fas fa-file-pdf"></i> Export PDF
+        </button>
+      </div>
+
+    </section>
+
+    <section id="sectionBackupRestore" class="hidden fade-slide-in max-w-[900px] mx-auto">
+
+      <h2 class="text-cyan-400 font-semibold text-2xl mb-6 uppercase tracking-wide text-center">Backup & Restore Catatan</h2>
+
+      <div class="bg-black bg-opacity-70 rounded-2xl-soft p-6 shadow-md flex flex-col gap-6">
+
+        <button id="backupBtn" class="btn-neon px-6 py-3 rounded-2xl-soft text-lg font-semibold flex items-center gap-3 justify-center w-full sm:w-auto" aria-label="Backup data to JSON file">
+          <i class="fas fa-download"></i> Backup Catatan
+        </button>
+
+        <label for="restoreInput" class="btn-neon px-6 py-3 rounded-2xl-soft text-lg font-semibold flex items-center gap-3 justify-center w-full sm:w-auto cursor-pointer" aria-label="Restore data from JSON file">
+          <i class="fas fa-upload"></i> Open Catatan
+        </label>
+        <input type="file" id="restoreInput" accept="application/json" class="hidden" aria-hidden="true" />
+
+      </div>
+
+    </section>
+
+    <section id="sectionHelp" class="hidden fade-slide-in max-w-[900px] mx-auto">
+
+      <h2 class="text-cyan-400 font-semibold text-2xl mb-6 uppercase tracking-wide text-center">Fitur & Fungsi TraderZero</h2>
+
+      <div class="bg-black bg-opacity-70 rounded-2xl-soft p-6 shadow-md text-gray-300 space-y-6 leading-relaxed">
+
+        <p><span class="font-semibold text-cyan-400">1. Login:</span> Masukkan username untuk mengakses data Anda. Data tersimpan secara lokal per user, sehingga aman dan terpisah.</p>
+
+        <p><span class="font-semibold text-cyan-400">2. Form Input Data:</span> Masukkan detail trading seperti teknik, jam entry, posisi (Buy/Sell), pair, harga entry, stop loss, take profit, alasan entry, dan hasil (Win/Loss). Validasi memastikan data valid dan lengkap.</p>
+
+        <p><span class="font-semibold text-cyan-400">3. Tabel Data:</span> Menampilkan semua entry trading Anda dengan tampilan premium. Anda dapat mencari, memfilter, dan mengurutkan data. Edit dan hapus entry dilakukan melalui modal pop-up yang elegan.</p>
+
+        <p><span class="font-semibold text-cyan-400">4. Statistik Otomatis:</span> Menampilkan total entry, jumlah win, jumlah loss, dan winrate (%) dengan animasi angka yang menarik dan ikon yang jelas.</p>
+
+        <p><span class="font-semibold text-cyan-400">5. Grafik Premium:</span> Grafik garis menunjukkan perkembangan winrate mingguan atau bulanan, dan grafik donat menampilkan rasio win vs loss. Grafik interaktif dengan animasi halus dan latar belakang gradasi.</p>
+
+        <p><span class="font-semibold text-cyan-400">6. Export Data:</span> Ekspor data trading Anda ke format CSV, Excel, atau PDF (termasuk grafik dan tabel) dengan tombol yang mudah digunakan dan efek hover glowing.</p>
+
+        <p><span class="font-semibold text-cyan-400">7. Backup & Restore Catatan:</span> Backup data trading Anda ke file JSON dan restore kapan saja. Mendukung multi user dengan notifikasi sukses atau error yang jelas.</p>
+
+        <p><span class="font-semibold text-cyan-400">8. UI/UX Premium:</span> Desain modern dengan sidebar minimalis, kartu statistik yang rapi, dark mode dengan animasi bintang, dan overlay chart trading berjalan di latar belakang untuk kesan futuristik dan mewah.</p>
+
+        <p><span class="font-semibold text-cyan-400">9. Branding TraderZero:</span> Logo TZ neon biru-merah yang elegan di header dan splash screen, serta footer dengan kredit pembuat.</p>
+
+        <p><span class="font-semibold text-cyan-400">10. Fitur Tambahan:</span> Sorting tabel dengan klik header, toggle grafik mingguan/bulanan, notifikasi toast untuk semua aksi, konfirmasi modal saat hapus data, dan desain responsif untuk mobile.</p>
+
+      </div>
+
+    </section>
+
+    <section id="sectionSettings" class="hidden fade-slide-in max-w-[900px] mx-auto">
+
+      <h2 class="text-cyan-400 font-semibold text-2xl mb-6 uppercase tracking-wide text-center">Settings</h2>
+
+      <div class="bg-black bg-opacity-70 rounded-2xl-soft p-6 shadow-md flex flex-col gap-6">
+
+        <div class="flex items-center justify-between max-w-xs mx-auto">
+          <label for="darkModeToggleSettings" class="text-gray-300 font-semibold">Dark Mode</label>
+          <input type="checkbox" id="darkModeToggleSettings" class="toggle-checkbox w-12 h-6 rounded-full cursor-pointer" aria-label="Toggle dark mode" />
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<!-- Login Screen -->
+<div id="loginScreen" class="fixed inset-0 bg-black flex flex-col justify-center items-center z-50 select-none px-6">
+  <div class="bg-black bg-opacity-90 rounded-2xl-soft p-10 max-w-md w-full shadow-lg flex flex-col items-center animate-fade-slide-in">
+    <h1 class="text-7xl font-extrabold neon-blue tracking-widest" style="font-family: 'Poppins', sans-serif; user-select:none;">
+      <span class="tz-blue">T</span><span class="tz-red">Z</span>
+    </h1>
+    <small class="mb-8 text-gray-400 font-semibold tracking-widest">TraderZero</small>
+    <form id="loginForm" class="w-full flex flex-col gap-6" novalidate>
+      <label for="usernameInput" class="text-gray-300 font-semibold text-lg">Username</label>
+      <input type="text" id="usernameInput" name="usernameInput" placeholder="Enter your username" required autocomplete="off" class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-3 text-gray-200 text-lg" aria-describedby="errorUsername" />
+      <p class="text-red-500 text-xs mt-1 hidden" id="errorUsername">Username tidak boleh kosong.</p>
+      <button type="submit" class="btn-neon px-6 py-3 rounded-2xl-soft text-xl font-semibold flex items-center justify-center gap-3" aria-label="Login">
+        <i class="fas fa-sign-in-alt"></i> Login
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal for Edit Entry -->
+<div id="modalEdit" class="fixed inset-0 hidden items-center justify-center z-50 modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalEditTitle" aria-describedby="modalEditDesc">
+  <div class="bg-black bg-opacity-90 rounded-2xl-soft p-6 max-w-3xl w-full shadow-lg relative">
+    <h3 id="modalEditTitle" class="text-cyan-400 font-semibold text-2xl mb-4 uppercase tracking-wide text-center">Edit Entry</h3>
+    <form id="editForm" class="grid grid-cols-1 md:grid-cols-2 gap-6 modal-content-scroll overflow-y-auto max-h-[60vh]" novalidate>
+      <input type="hidden" id="editIndex" />
+      <div class="flex flex-col">
+        <label for="editTeknik" class="mb-1 text-gray-300 font-semibold">Teknik</label>
+        <input type="text" id="editTeknik" name="editTeknik" required class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200" />
+        <p class="text-red-500 text-xs mt-1 hidden" id="errorEditTeknik">Teknik tidak boleh kosong.</p>
+      </div>
+      <div class="flex flex-col">
+        <label for="editJamEntry" class="mb-1 text-gray-300 font-semibold">Jam Entry</label>
+        <input type="time" id="editJamEntry" name="editJamEntry" required class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200" />
+        <p class="text-red-500 text-xs mt-1 hidden" id="errorEditJamEntry">Jam Entry harus diisi.</p>
+      </div>
+      <div class="flex flex-col">
+        <label for="editPosisi" class="mb-1 text-gray-300 font-semibold">Posisi</label>
+        <select id="editPosisi" name="editPosisi" required class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200">
+          <option value="Buy">Buy</option>
+          <option value="Sell">Sell</option>
+        </select>
+        <p class="text-red-500 text-xs mt-1 hidden" id="errorEditPosisi">Posisi harus dipilih.</p>
+      </div>
+      <div class="flex flex-col">
+        <label for="editPair" class="mb-1 text-gray-300 font-semibold">Pair</label>
+        <input type="text" id="editPair" name="editPair" required class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200" />
+        <p class="text-red-500 text-xs mt-1 hidden" id="errorEditPair">Pair tidak boleh kosong.</p>
+      </div>
+      <div class="flex flex-col">
+        <label for="editEntryPrice" class="mb-1 text-gray-300 font-semibold">Entry Price</label>
+        <input type="number" step="any" id="editEntryPrice" name="editEntryPrice" required class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200" />
+        <p class="text-red-500 text-xs mt-1 hidden" id="errorEditEntryPrice">Entry Price harus angka valid.</p>
+      </div>
+      <div class="flex flex-col">
+        <label for="editStopLoss" class="mb-1 text-gray-300 font-semibold">Stop Loss</label>
+        <input type="number" step="any" id="editStopLoss" name="editStopLoss" required class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200" />
+        <p class="text-red-500 text-xs mt-1 hidden" id="errorEditStopLoss">Stop Loss harus angka valid.</p>
+      </div>
+      <div class="flex flex-col">
+        <label for="editTakeProfit" class="mb-1 text-gray-300 font-semibold">Take Profit</label>
+        <input type="number" step="any" id="editTakeProfit" name="editTakeProfit" required class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200" />
+        <p class="text-red-500 text-xs mt-1 hidden" id="errorEditTakeProfit">Take Profit harus angka valid.</p>
+      </div>
+      <div class="flex flex-col md:col-span-2">
+        <label for="editAlasanEntry" class="mb-1 text-gray-300 font-semibold">Alasan Entry</label>
+        <textarea id="editAlasanEntry" name="editAlasanEntry" rows="3" required class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200 resize-none"></textarea>
+        <p class="text-red-500 text-xs mt-1 hidden" id="errorEditAlasanEntry">Alasan Entry tidak boleh kosong.</p>
+      </div>
+      <div class="flex flex-col md:col-span-2">
+        <label for="editHasil" class="mb-1 text-gray-300 font-semibold">Hasil</label>
+        <select id="editHasil" name="editHasil" required class="rounded-2xl-soft bg-black bg-opacity-80 border border-gray-700 px-4 py-2 text-gray-200">
+          <option value="Win">Win</option>
+          <option value="Loss">Loss</option>
+        </select>
+        <p class="text-red-500 text-xs mt-1 hidden" id="errorEditHasil">Hasil harus dipilih.</p>
+      </div>
+      <div class="md:col-span-2 flex justify-end gap-4">
+        <button type="button" id="cancelEditBtn" class="btn-red-neon px-6 py-3 rounded-2xl-soft font-semibold flex items-center gap-2" aria-label="Cancel edit">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+        <button type="submit" class="btn-neon px-6 py-3 rounded-2xl-soft font-semibold flex items-center gap-2" aria-label="Save changes">
+          <i class="fas fa-save"></i> Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal for Delete Confirmation -->
+<div id="modalDelete" class="fixed inset-0 hidden items-center justify-center z-50 modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalDeleteTitle" aria-describedby="modalDeleteDesc">
+  <div class="bg-black bg-opacity-90 rounded-2xl-soft p-6 max-w-md w-full shadow-lg relative flex flex-col items-center">
+    <h3 id="modalDeleteTitle" class="text-red-500 font-bold text-2xl mb-4 uppercase tracking-wide">Confirm Delete</h3>
+    <p id="modalDeleteDesc" class="text-gray-300 mb-6 text-center">Are you sure you want to delete this entry? This action cannot be undone.</p>
+    <div class="flex gap-6">
+      <button id="cancelDeleteBtn" class="btn-neon px-6 py-3 rounded-2xl-soft font-semibold flex items-center gap-2" aria-label="Cancel delete">
+        <i class="fas fa-times"></i> Cancel
+      </button>
+      <button id="confirmDeleteBtn" class="btn-red-neon px-6 py-3 rounded-2xl-soft font-semibold flex items-center gap-2" aria-label="Confirm delete">
+        <i class="fas fa-trash-alt"></i> Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-black bg-opacity-90 border-t border-cyan-600/40 text-center py-4 text-gray-400 select-none z-10">
+  Website ini dibuat oleh <span class="neon-blue font-semibold">TraderZero</span>
+</footer>
+
+<script>
+(() => {
+  // Utility functions
+  function createToast(message, type = 'info', duration = 3500) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    if(type === 'success') {
+      toast.style.borderLeftColor = '#00ffcc';
+      toast.style.boxShadow = '0 0 10px #00ffccaa';
+      toast.innerHTML = `<i class="fas fa-check-circle"></i><span>${message}</span>`;
+    } else if(type === 'error') {
+      toast.style.borderLeftColor = '#ff0033';
+      toast.style.boxShadow = '0 0 10px #ff0033aa';
+      toast.innerHTML = `<i class="fas fa-exclamation-triangle"></i><span>${message}</span>`;
+    } else {
+      toast.innerHTML = `<i class="fas fa-info-circle"></i><span>${message}</span>`;
+    }
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(100%)';
+      setTimeout(() => container.removeChild(toast), 400);
+    }, duration);
+  }
+
+  // CountUp animation for numbers
+  function animateCountUp(element, target, duration = 1000) {
+    let start = 0;
+    const stepTime = Math.abs(Math.floor(duration / (target || 1)));
+    if(target === 0) {
+      element.textContent = '0';
+      return;
+    }
+    const timer = setInterval(() => {
+      start += 1;
+      if(start >= target) {
+        clearInterval(timer);
+        element.textContent = target;
+      } else {
+        element.textContent = start;
+      }
+    }, stepTime);
+  }
+
+  // CountUp with percentage sign
+  function animateCountUpPercent(element, target, duration = 1000) {
+    let start = 0;
+    const stepTime = Math.abs(Math.floor(duration / (target || 1)));
+    if(target === 0) {
+      element.textContent = '0%';
+      return;
+    }
+    const timer = setInterval(() => {
+      start += 1;
+      if(start >= target) {
+        clearInterval(timer);
+        element.textContent = target + '%';
+      } else {
+        element.textContent = start + '%';
+      }
+    }, stepTime);
+  }
+
+  // Data structure for entries
+  // Each entry: { teknik, jamEntry, posisi, pair, entryPrice, stopLoss, takeProfit, alasanEntry, hasil, createdAt }
+  // createdAt: timestamp for sorting
+
+  // DOM Elements
+  const loginScreen = document.getElementById('loginScreen');
+  const loginForm = document.getElementById('loginForm');
+  const usernameInput = document.getElementById('usernameInput');
+  const errorUsername = document.getElementById('errorUsername');
+  const app = document.getElementById('app');
+  const userDisplay = document.getElementById('userDisplay');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  const navDashboard = document.getElementById('navDashboard');
+  const navAddEntry = document.getElementById('navAddEntry');
+  const navDataTable = document.getElementById('navDataTable');
+  const navExport = document.getElementById('navExport');
+  const navBackupRestore = document.getElementById('navBackupRestore');
+  const navHelp = document.getElementById('navHelp');
+  const navSettings = document.getElementById('navSettings');
+
+  const sectionDashboard = document.getElementById('sectionDashboard');
+  const sectionAddEntry = document.getElementById('sectionAddEntry');
+  const sectionDataTable = document.getElementById('sectionDataTable');
+  const sectionExport = document.getElementById('sectionExport');
+  const sectionBackupRestore = document.getElementById('sectionBackupRestore');
+  const sectionHelp = document.getElementById('sectionHelp');
+  const sectionSettings = document.getElementById('sectionSettings');
+
+  const entryForm = document.getElementById('entryForm');
+  const errorTeknik = document.getElementById('errorTeknik');
+  const errorJamEntry = document.getElementById('errorJamEntry');
+  const errorPosisi = document.getElementById('errorPosisi');
+  const errorPair = document.getElementById('errorPair');
+  const errorEntryPrice = document.getElementById('errorEntryPrice');
+  const errorStopLoss = document.getElementById('errorStopLoss');
+  const errorTakeProfit = document.getElementById('errorTakeProfit');
+  const errorAlasanEntry = document.getElementById('errorAlasanEntry');
+  const errorHasil = document.getElementById('errorHasil');
+
+  const entriesTableBody = document.getElementById('entriesTableBody');
+  const searchInput = document.getElementById('searchInput');
+  const filterResult = document.getElementById('filterResult');
+
+  const statTotal = document.getElementById('statTotal');
+  const statWin = document.getElementById('statWin');
+  const statLoss = document.getElementById('statLoss');
+  const statWinrate = document.getElementById('statWinrate');
+
+  const modalEdit = document.getElementById('modalEdit');
+  const editForm = document.getElementById('editForm');
+  const cancelEditBtn = document.getElementById('cancelEditBtn');
+  const errorEditTeknik = document.getElementById('errorEditTeknik');
+  const errorEditJamEntry = document.getElementById('errorEditJamEntry');
+  const errorEditPosisi = document.getElementById('errorEditPosisi');
+  const errorEditPair = document.getElementById('errorEditPair');
+  const errorEditEntryPrice = document.getElementById('errorEditEntryPrice');
+  const errorEditStopLoss = document.getElementById('errorEditStopLoss');
+  const errorEditTakeProfit = document.getElementById('errorEditTakeProfit');
+  const errorEditAlasanEntry = document.getElementById('errorEditAlasanEntry');
+  const errorEditHasil = document.getElementById('errorEditHasil');
+
+  const modalDelete = document.getElementById('modalDelete');
+  const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+  const darkModeToggle = document.getElementById('darkModeToggle');
+  const darkModeToggleSettings = document.getElementById('darkModeToggleSettings');
+  const darkModeIcon = document.getElementById('darkModeIcon');
+
+  const exportCSVBtn = document.getElementById('exportCSV');
+  const exportExcelBtn = document.getElementById('exportExcel');
+  const exportPDFBtn = document.getElementById('exportPDF');
+
+  const backupBtn = document.getElementById('backupBtn');
+  const restoreInput = document.getElementById('restoreInput');
+
+  const btnWeekly = document.getElementById('btnWeekly');
+  const btnMonthly = document.getElementById('btnMonthly');
+
+  const overlayCanvas = document.getElementById('overlayChart');
+  const overlayCtx = overlayCanvas.getContext('2d');
+  const starsBg = document.getElementById('starsBg');
+
+  // State
+  let currentUser = null;
+  let entries = [];
+  let filteredEntries = [];
+  let editingIndex = null;
+  let deletingIndex = null;
+  let currentSort = { key: 'createdAt', asc: false };
+  let currentWinrateView = 'weekly'; // or 'monthly'
+
+  // Chart instances
+  let lineChartInstance = null;
+  let pieChartInstance = null;
+
+  // Resize overlay canvas to full window
+  function resizeOverlayCanvas() {
+    overlayCanvas.width = window.innerWidth;
+    overlayCanvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeOverlayCanvas);
+  resizeOverlayCanvas();
+
+  // Splash screen fade out
+  function hideSplashScreen() {
+    const splash = document.getElementById('splashScreen');
+    splash.style.transition = 'opacity 1s ease';
+    splash.style.opacity = '0';
+    setTimeout(() => {
+      splash.style.display = 'none';
+    }, 1000);
+  }
+
+  // Dark mode toggle
+  function setDarkMode(enabled) {
+    if(enabled) {
+      document.documentElement.classList.add('dark');
+      darkModeIcon.classList.remove('fa-moon');
+      darkModeIcon.classList.add('fa-sun');
+      localStorage.setItem('tz-darkmode', 'true');
+      darkModeToggleSettings.checked = true;
+      starsBg.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      darkModeIcon.classList.remove('fa-sun');
+      darkModeIcon.classList.add('fa-moon');
+      localStorage.setItem('tz-darkmode', 'false');
+      darkModeToggleSettings.checked = false;
+      starsBg.classList.remove('dark');
+    }
+  }
+
+  // Load dark mode preference
+  function loadDarkMode() {
+    const dm = localStorage.getItem('tz-darkmode');
+    if(dm === 'true') {
+      setDarkMode(true);
+    } else {
+      setDarkMode(false);
+    }
+  }
+
+  // Show toast success
+  function showSuccessToast(msg) {
+    createToast(msg, 'success');
+  }
+
+  // Show toast error
+  function showErrorToast(msg) {
+    createToast(msg, 'error');
+  }
+
+  // Save entries to localStorage
+  function saveEntries() {
+    if(!currentUser) return;
+    localStorage.setItem(`tz-entries-${currentUser}`, JSON.stringify(entries));
+  }
+
+  // Load entries from localStorage
+  function loadEntries() {
+    if(!currentUser) return;
+    const data = localStorage.getItem(`tz-entries-${currentUser}`);
+    if(data) {
+      try {
+        entries = JSON.parse(data);
+      } catch {
+        entries = [];
+      }
+    } else {
+      entries = [];
+    }
+  }
+
+  // Update statistics cards with animation
+  function updateStatistics() {
+    const total = entries.length;
+    const win = entries.filter(e => e.hasil === 'Win').length;
+    const loss = entries.filter(e => e.hasil === 'Loss').length;
+    const winrate = total === 0 ? 0 : Math.round((win / total) * 100);
+
+    animateCountUp(statTotal, total);
+    animateCountUp(statWin, win);
+    animateCountUp(statLoss, loss);
+    animateCountUpPercent(statWinrate, winrate);
+  }
+
+  // Filter, search entries
+  function applyFilters() {
+    let temp = [...entries];
+    const searchTerm = searchInput.value.trim().toLowerCase();
+    const filterVal = filterResult.value;
+
+    if(filterVal !== 'all') {
+      temp = temp.filter(e => e.hasil === filterVal);
+    }
+    if(searchTerm) {
+      temp = temp.filter(e => {
+        return (
+          e.teknik.toLowerCase().includes(searchTerm) ||
+          e.pair.toLowerCase().includes(searchTerm) ||
+          e.hasil.toLowerCase().includes(searchTerm)
+        );
+      });
+    }
+
+    // Sorting
+    temp.sort((a,b) => {
+      let valA, valB;
+      switch(currentSort.key) {
+        case 'index': valA = entries.indexOf(a); valB = entries.indexOf(b); break;
+        case 'teknik': valA = a.teknik.toLowerCase(); valB = b.teknik.toLowerCase(); break;
+        case 'jamEntry': valA = a.jamEntry; valB = b.jamEntry; break;
+        case 'posisi': valA = a.posisi.toLowerCase(); valB = b.posisi.toLowerCase(); break;
+        case 'pair': valA = a.pair.toLowerCase(); valB = b.pair.toLowerCase(); break;
+        case 'entryPrice': valA = a.entryPrice; valB = b.entryPrice; break;
+        case 'stopLoss': valA = a.stopLoss; valB = b.stopLoss; break;
+        case 'takeProfit': valA = a.takeProfit; valB = b.takeProfit; break;
+        case 'alasanEntry': valA = a.alasanEntry.toLowerCase(); valB = b.alasanEntry.toLowerCase(); break;
+        case 'hasil': valA = a.hasil.toLowerCase(); valB = b.hasil.toLowerCase(); break;
+        case 'createdAt': valA = a.createdAt; valB = b.createdAt; break;
+        default: valA = a.createdAt; valB = b.createdAt;
+      }
+      if(valA < valB) return currentSort.asc ? -1 : 1;
+      if(valA > valB) return currentSort.asc ? 1 : -1;
+      return 0;
+    });
+
+    filteredEntries = temp;
+  }
+
+  // Render entries table
+  function renderTable() {
+    entriesTableBody.innerHTML = '';
+    filteredEntries.forEach((entry, idx) => {
+      const tr = document.createElement('tr');
+      tr.className = 'cursor-default';
+
+      // # index
+      const tdIndex = document.createElement('td');
+      tdIndex.className = 'px-4 py-3 font-semibold text-cyan-400';
+      tdIndex.textContent = idx + 1;
+      tr.appendChild(tdIndex);
+
+      // Teknik
+      const tdTeknik = document.createElement('td');
+      tdTeknik.className = 'px-4 py-3';
+      tdTeknik.textContent = entry.teknik;
+      tr.appendChild(tdTeknik);
+
+      // Jam Entry
+      const tdJamEntry = document.createElement('td');
+      tdJamEntry.className = 'px-4 py-3';
+      tdJamEntry.textContent = entry.jamEntry;
+      tr.appendChild(tdJamEntry);
+
+      // Posisi
+      const tdPosisi = document.createElement('td');
+      tdPosisi.className = 'px-4 py-3';
+      tdPosisi.textContent = entry.posisi;
+      tr.appendChild(tdPosisi);
+
+      // Pair
+      const tdPair = document.createElement('td');
+      tdPair.className = 'px-4 py-3';
+      tdPair.textContent = entry.pair;
+      tr.appendChild(tdPair);
+
+      // Entry Price
+      const tdEntryPrice = document.createElement('td');
+      tdEntryPrice.className = 'px-4 py-3 text-right';
+      tdEntryPrice.textContent = formatNumber(entry.entryPrice);
+      tr.appendChild(tdEntryPrice);
+
+      // Stop Loss
+      const tdStopLoss = document.createElement('td');
+      tdStopLoss.className = 'px-4 py-3 text-right';
+      tdStopLoss.textContent = formatNumber(entry.stopLoss);
+      tr.appendChild(tdStopLoss);
+
+      // Take Profit
+      const tdTakeProfit = document.createElement('td');
+      tdTakeProfit.className = 'px-4 py-3 text-right';
+      tdTakeProfit.textContent = formatNumber(entry.takeProfit);
+      tr.appendChild(tdTakeProfit);
+
+      // Alasan Entry
+      const tdAlasan = document.createElement('td');
+      tdAlasan.className = 'px-4 py-3 max-w-xs truncate';
+      tdAlasan.title = entry.alasanEntry;
+      tdAlasan.textContent = entry.alasanEntry;
+      tr.appendChild(tdAlasan);
+
+      // Hasil
+      const tdHasil = document.createElement('td');
+      tdHasil.className = 'px-4 py-3 font-semibold ' + (entry.hasil === 'Win' ? 'text-blue-400' : 'text-red-500');
+      tdHasil.textContent = entry.hasil;
+      tr.appendChild(tdHasil);
+
+      // Actions
+      const tdActions = document.createElement('td');
+      tdActions.className = 'px-4 py-3 flex gap-3';
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'text-cyan-400 hover:text-blue-400 transition-colors duration-300';
+      editBtn.setAttribute('aria-label', `Edit entry #${idx + 1}`);
+      editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+      editBtn.addEventListener('click', () => openEditModal(idx));
+      tdActions.appendChild(editBtn);
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'text-red-500 hover:text-red-600 transition-colors duration-300';
+      deleteBtn.setAttribute('aria-label', `Delete entry #${idx + 1}`);
+      deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+      deleteBtn.addEventListener('click', () => openDeleteModal(idx));
+      tdActions.appendChild(deleteBtn);
+
+      tr.appendChild(tdActions);
+
+      entriesTableBody.appendChild(tr);
+    });
+  }
+
+  // Format number: remove trailing zeros after decimal, max 4 decimals
+  function formatNumber(num) {
+    if(typeof num !== 'number') return '';
+    return parseFloat(num.toFixed(4)).toString();
+  }
+
+  // Update charts
+  function updateCharts() {
+    // Prepare data for line chart (winrate over time)
+    // We'll calculate cumulative winrate after each entry sorted by createdAt ascending
+    // Group by week or month depending on currentWinrateView
+
+    const sortedEntries = [...entries].sort((a,b) => a.createdAt - b.createdAt);
+
+    // Group entries by week or month
+    const groups = {};
+    const labels = [];
+    const winrateData = [];
+
+    function getWeekYear(date) {
+      const d = new Date(date);
+      d.setHours(0,0,0,0);
+      d.setDate(d.getDate() + 4 - (d.getDay()||7));
+      const yearStart = new Date(d.getFullYear(),0,1);
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+      return `${d.getFullYear()}-W${weekNo}`;
+    }
+    function getMonthYear(date) {
+      const d = new Date(date);
+      return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
+    }
+
+    sortedEntries.forEach(e => {
+      const key = currentWinrateView === 'weekly' ? getWeekYear(e.createdAt) : getMonthYear(e.createdAt);
+      if(!groups[key]) groups[key] = [];
+      groups[key].push(e);
+    });
+
+    // Calculate winrate per group
+    Object.keys(groups).sort().forEach(key => {
+      const group = groups[key];
+      const total = group.length;
+      const win = group.filter(e => e.hasil === 'Win').length;
+      const rate = Math.round((win / total) * 100);
+      labels.push(key);
+      winrateData.push(rate);
+    });
+
+    // Line Chart
+    if(lineChartInstance) {
+      lineChartInstance.data.labels = labels;
+      lineChartInstance.data.datasets[0].data = winrateData;
+      lineChartInstance.update();
+    } else {
+      const ctxLine = document.getElementById('lineChart').getContext('2d');
+      const gradient = ctxLine.createLinearGradient(0, 0, 0, 300);
+      gradient.addColorStop(0, 'rgba(0,255,255,0.5)');
+      gradient.addColorStop(1, 'rgba(0,255,255,0)');
+
+      lineChartInstance = new Chart(ctxLine, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Winrate (%)',
+            data: winrateData,
+            borderColor: '#00ffff',
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 7,
+            borderWidth: 3,
+          }]
+        },
+        options: {
+          responsive: true,
+          animation: {duration: 800},
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                color: '#00ffff',
+                stepSize: 20,
+                callback: v => v + '%'
+              },
+              grid: {
+                color: '#003344'
+              }
+            },
+            x: {
+              ticks: {
+                color: '#00ffff',
+                maxRotation: 45,
+                minRotation: 45,
+                autoSkip: true,
+                maxTicksLimit: 10
+              },
+              grid: {
+                color: '#003344'
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: '#00ffff',
+                font: {weight: 'bold'}
+              }
+            },
+            tooltip: {
+              enabled: true,
+              backgroundColor: '#000',
+              titleColor: '#00ffff',
+              bodyColor: '#00ffff',
+              borderColor: '#00ffff',
+              borderWidth: 1,
+              callbacks: {
+                label: ctx => ctx.parsed.y + '%'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Pie Chart (Win vs Loss)
+    const winCount = entries.filter(e => e.hasil === 'Win').length;
+    const lossCount = entries.filter(e => e.hasil === 'Loss').length;
+
+    if(pieChartInstance) {
+      pieChartInstance.data.datasets[0].data = [winCount, lossCount];
+      pieChartInstance.update();
+    } else {
+      const ctxPie = document.getElementById('pieChart').getContext('2d');
+      pieChartInstance = new Chart(ctxPie, {
+        type: 'doughnut',
+        data: {
+          labels: ['Win', 'Loss'],
+          datasets: [{
+            data: [winCount, lossCount],
+            backgroundColor: ['#00ffff', '#ff0033'],
+            borderColor: '#000',
+            borderWidth: 2,
+            hoverOffset: 30,
+          }]
+        },
+        options: {
+          responsive: true,
+          animation: {duration: 800},
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#00ffff',
+                font: {weight: 'bold'}
+              }
+            },
+            tooltip: {
+              enabled: true,
+              backgroundColor: '#000',
+              titleColor: '#00ffff',
+              bodyColor: '#00ffff',
+              borderColor: '#00ffff',
+              borderWidth: 1,
+            }
+          }
+        }
+      });
+    }
+  }
+
+  // Show section by id, hide others
+  function showSection(section) {
+    [sectionDashboard, sectionAddEntry, sectionDataTable, sectionExport, sectionBackupRestore, sectionHelp, sectionSettings].forEach(sec => {
+      if(sec === section) {
+        sec.classList.remove('hidden');
+      } else {
+        sec.classList.add('hidden');
+      }
+    });
+  }
+
+  // Navigation button active state
+  function setActiveNav(button) {
+    [navDashboard, navAddEntry, navDataTable, navExport, navBackupRestore, navHelp, navSettings].forEach(btn => {
+      if(btn === button) {
+        btn.classList.add('active');
+        btn.setAttribute('aria-current', 'page');
+      } else {
+        btn.classList.remove('active');
+        btn.removeAttribute('aria-current');
+      }
+    });
+  }
+
+  // Open edit modal with data
+  function openEditModal(index) {
+    editingIndex = index;
+    const entry = filteredEntries[index];
+    if(!entry) return;
+
+    // Fill form
+    document.getElementById('editIndex').value = index;
+    document.getElementById('editTeknik').value = entry.teknik;
+    document.getElementById('editJamEntry').value = entry.jamEntry;
+    document.getElementById('editPosisi').value = entry.posisi;
+    document.getElementById('editPair').value = entry.pair;
+    document.getElementById('editEntryPrice').value = entry.entryPrice;
+    document.getElementById('editStopLoss').value = entry.stopLoss;
+    document.getElementById('editTakeProfit').value = entry.takeProfit;
+    document.getElementById('editAlasanEntry').value = entry.alasanEntry;
+    document.getElementById('editHasil').value = entry.hasil;
+
+    clearEditErrors();
+    modalEdit.classList.remove('hidden');
+    modalEdit.querySelector('input,select,textarea').focus();
+  }
+
+  // Close edit modal
+  function closeEditModal() {
+    modalEdit.classList.add('hidden');
+    editingIndex = null;
+  }
+
+  // Open delete modal
+  function openDeleteModal(index) {
+    deletingIndex = index;
+    modalDelete.classList.remove('hidden');
+  }
+
+  // Close delete modal
+  function closeDeleteModal() {
+    modalDelete.classList.add('hidden');
+    deletingIndex = null;
+  }
+
+  // Validate entry form inputs
+  function validateEntryForm(form, errors) {
+    let valid = true;
+    const teknik = form.teknik.value.trim();
+    const jamEntry = form.jamEntry.value;
+    const posisi = form.posisi.value;
+    const pair = form.pair.value.trim();
+    const entryPrice = form.entryPrice.value;
+    const stopLoss = form.stopLoss.value;
+    const takeProfit = form.takeProfit.value;
+    const alasanEntry = form.alasanEntry.value.trim();
+    const hasil = form.hasil.value;
+
+    if(!teknik) {
+      errors.teknik.classList.remove('hidden');
+      valid = false;
+    } else {
+      errors.teknik.classList.add('hidden');
+    }
+    if(!jamEntry) {
+      errors.jamEntry.classList.remove('hidden');
+      valid = false;
+    } else {
+      errors.jamEntry.classList.add('hidden');
+    }
+    if(!posisi) {
+      errors.posisi.classList.remove('hidden');
+      valid = false;
+    } else {
+      errors.posisi.classList.add('hidden');
+    }
+    if(!pair) {
+      errors.pair.classList.remove('hidden');
+      valid = false;
+    } else {
+      errors.pair.classList.add('hidden');
+    }
+    if(!entryPrice || isNaN(entryPrice)) {
+      errors.entryPrice.classList.remove('hidden');
+      valid = false;
+    } else {
+      errors.entryPrice.classList.add('hidden');
+    }
+    if(!stopLoss || isNaN(stopLoss)) {
+      errors.stopLoss.classList.remove('hidden');
+      valid = false;
+    } else {
+      errors.stopLoss.classList.add('hidden');
+    }
+    if(!takeProfit || isNaN(takeProfit)) {
+      errors.takeProfit.classList.remove('hidden');
+      valid = false;
+    } else {
+      errors.takeProfit.classList.add('hidden');
+    }
+    if(!alasanEntry) {
+      errors.alasanEntry.classList.remove('hidden');
+      valid = false;
+    } else {
+      errors.alasanEntry.classList.add('hidden');
+    }
+    if(!hasil) {
+      errors.hasil.classList.remove('hidden');
+      valid = false;
+    } else {
+      errors.hasil.classList.add('hidden');
+    }
+    return valid;
+  }
+
+  // Clear edit form errors
+  function clearEditErrors() {
+    errorEditTeknik.classList.add('hidden');
+    errorEditJamEntry.classList.add('hidden');
+    errorEditPosisi.classList.add('hidden');
+    errorEditPair.classList.add('hidden');
+    errorEditEntryPrice.classList.add('hidden');
+    errorEditStopLoss.classList.add('hidden');
+    errorEditTakeProfit.classList.add('hidden');
+    errorEditAlasanEntry.classList.add('hidden');
+    errorEditHasil.classList.add('hidden');
+  }
+
+  // Add new entry
+  entryForm.addEventListener('submit', e => {
+    e.preventDefault();
+    if(!currentUser) return;
+
+    const errors = {
+      teknik: errorTeknik,
+      jamEntry: errorJamEntry,
+      posisi: errorPosisi,
+      pair: errorPair,
+      entryPrice: errorEntryPrice,
+      stopLoss: errorStopLoss,
+      takeProfit: errorTakeProfit,
+      alasanEntry: errorAlasanEntry,
+      hasil: errorHasil
+    };
+
+    if(!validateEntryForm(entryForm, errors)) {
+      showErrorToast('Periksa kembali input form.');
+      return;
+    }
+
+    const formData = new FormData(entryForm);
+    const newEntry = {
+      teknik: formData.get('teknik').trim(),
+      jamEntry: formData.get('jamEntry'),
+      posisi: formData.get('posisi'),
+      pair: formData.get('pair').trim(),
+      entryPrice: parseFloat(formData.get('entryPrice')),
+      stopLoss: parseFloat(formData.get('stopLoss')),
+      takeProfit: parseFloat(formData.get('takeProfit')),
+      alasanEntry: formData.get('alasanEntry').trim(),
+      hasil: formData.get('hasil'),
+      createdAt: Date.now()
+    };
+
+    entries.push(newEntry);
+    saveEntries();
+    applyFilters();
+    renderTable();
+    updateStatistics();
+    updateCharts();
+    showSuccessToast('Entry berhasil ditambahkan!');
+    entryForm.reset();
+    navDashboard.click();
+  });
+
+  // Edit form submit
+  editForm.addEventListener('submit', e => {
+    e.preventDefault();
+    if(editingIndex === null) return;
+
+    const errors = {
+      teknik: errorEditTeknik,
+      jamEntry: errorEditJamEntry,
+      posisi: errorEditPosisi,
+      pair: errorEditPair,
+      entryPrice: errorEditEntryPrice,
+      stopLoss: errorEditStopLoss,
+      takeProfit: errorEditTakeProfit,
+      alasanEntry: errorEditAlasanEntry,
+      hasil: errorEditHasil
+    };
+
+    if(!validateEntryForm(editForm, errors)) {
+      showErrorToast('Periksa kembali input form edit.');
+      return;
+    }
+
+    const formData = new FormData(editForm);
+    const updatedEntry = {
+      teknik: formData.get('editTeknik').trim(),
+      jamEntry: formData.get('editJamEntry'),
+      posisi: formData.get('editPosisi'),
+      pair: formData.get('editPair').trim(),
+      entryPrice: parseFloat(formData.get('editEntryPrice')),
+      stopLoss: parseFloat(formData.get('editStopLoss')),
+      takeProfit: parseFloat(formData.get('editTakeProfit')),
+      alasanEntry: formData.get('editAlasanEntry').trim(),
+      hasil: formData.get('editHasil'),
+      createdAt: entries[editingIndex].createdAt // keep original timestamp
+    };
+
+    entries[editingIndex] = updatedEntry;
+    saveEntries();
+    applyFilters();
+    renderTable();
+    updateStatistics();
+    updateCharts();
+    closeEditModal();
+    showSuccessToast('Entry berhasil diperbarui!');
+  });
+
+  cancelEditBtn.addEventListener('click', () => {
+    closeEditModal();
+  });
+
+  // Delete modal buttons
+  cancelDeleteBtn.addEventListener('click', () => {
+    closeDeleteModal();
+  });
+
+  confirmDeleteBtn.addEventListener('click', () => {
+    if(deletingIndex === null) return;
+    entries.splice(deletingIndex, 1);
+    saveEntries();
+    applyFilters();
+    renderTable();
+    updateStatistics();
+    updateCharts();
+    closeDeleteModal();
+    showSuccessToast('Entry berhasil dihapus!');
+  });
+
+  // Search, filter event listeners
+  searchInput.addEventListener('input', () => {
+    applyFilters();
+    renderTable();
+  });
+  filterResult.addEventListener('change', () => {
+    applyFilters();
+    renderTable();
+  });
+
+  // Sorting table by clicking headers
+  const tableHeaders = document.querySelectorAll('#entriesTable thead th[data-sort]');
+  tableHeaders.forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.getAttribute('data-sort');
+      if(currentSort.key === key) {
+        currentSort.asc = !currentSort.asc;
+      } else {
+        currentSort.key = key;
+        currentSort.asc = true;
+      }
+      applyFilters();
+      renderTable();
+      updateSortIcons();
+    });
+    th.addEventListener('keydown', e => {
+      if(e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        th.click();
+      }
+    });
+  });
+
+  function updateSortIcons() {
+    tableHeaders.forEach(th => {
+      const icon = th.querySelector('i');
+      if(!icon) return;
+      if(th.getAttribute('data-sort') === currentSort.key) {
+        icon.className = currentSort.asc ? 'fas fa-sort-up' : 'fas fa-sort-down';
+      } else {
+        icon.className = 'fas fa-sort';
+      }
+    });
+  }
+
+  // Navigation buttons including Help
+  navDashboard.addEventListener('click', () => {
+    showSection(sectionDashboard);
+    setActiveNav(navDashboard);
+  });
+  navAddEntry.addEventListener('click', () => {
+    showSection(sectionAddEntry);
+    setActiveNav(navAddEntry);
+  });
+  navDataTable.addEventListener('click', () => {
+    showSection(sectionDataTable);
+    setActiveNav(navDataTable);
+  });
+  navExport.addEventListener('click', () => {
+    showSection(sectionExport);
+    setActiveNav(navExport);
+  });
+  navBackupRestore.addEventListener('click', () => {
+    showSection(sectionBackupRestore);
+    setActiveNav(navBackupRestore);
+  });
+  navHelp.addEventListener('click', () => {
+    showSection(sectionHelp);
+    setActiveNav(navHelp);
+  });
+  navSettings.addEventListener('click', () => {
+    showSection(sectionSettings);
+    setActiveNav(navSettings);
+  });
+
+  // Logout
+  logoutBtn.addEventListener('click', () => {
+    currentUser = null;
+    localStorage.removeItem('tz-currentUser');
+    app.style.display = 'none';
+    loginScreen.style.display = 'flex';
+    showSection(sectionDashboard);
+    setActiveNav(navDashboard);
+    usernameInput.value = '';
+    usernameInput.focus();
+    showSuccessToast('Logged out successfully');
+  });
+
+  // Login form submit
+  loginForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const username = usernameInput.value.trim();
+    if(!username) {
+      errorUsername.classList.remove('hidden');
+      showErrorToast('Username tidak boleh kosong');
+      return;
+    }
+    errorUsername.classList.add('hidden');
+    currentUser = username;
+    localStorage.setItem('tz-currentUser', currentUser);
+    loadEntries();
+    applyFilters();
+    renderTable();
+    updateStatistics();
+    updateCharts();
+    userDisplay.textContent = `User: ${currentUser}`;
+    loginScreen.style.display = 'none';
+    app.style.display = 'flex';
+    hideSplashScreen();
+    navDashboard.click();
+  });
+
+  // Dark mode toggle buttons
+  darkModeToggle.addEventListener('click', () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    setDarkMode(!isDark);
+  });
+  darkModeToggleSettings.addEventListener('change', e => {
+    setDarkMode(e.target.checked);
+  });
+
+  // Export CSV
+  exportCSVBtn.addEventListener('click', () => {
+    if(entries.length === 0) {
+      showErrorToast('Tidak ada data untuk diekspor');
+      return;
+    }
+    const header = ['Teknik', 'Jam Entry', 'Posisi', 'Pair', 'Entry Price', 'Stop Loss', 'Take Profit', 'Alasan Entry', 'Hasil', 'Created At'];
+    const rows = entries.map(e => [
+      e.teknik,
+      e.jamEntry,
+      e.posisi,
+      e.pair,
+      e.entryPrice,
+      e.stopLoss,
+      e.takeProfit,
+      e.alasanEntry,
+      e.hasil,
+      new Date(e.createdAt).toLocaleString()
+    ]);
+    let csvContent = header.join(',') + '\n';
+    rows.forEach(r => {
+      const escaped = r.map(v => `"${String(v).replace(/"/g, '""')}"`);
+      csvContent += escaped.join(',') + '\n';
+    });
+    const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+    saveAs(blob, `TraderZero_Backtesting_${currentUser}.csv`);
+    showSuccessToast('Data berhasil diekspor ke CSV');
+  });
+
+  // Export Excel
+  exportExcelBtn.addEventListener('click', () => {
+    if(entries.length === 0) {
+      showErrorToast('Tidak ada data untuk diekspor');
+      return;
+    }
+    const ws_data = [
+      ['Teknik', 'Jam Entry', 'Posisi', 'Pair', 'Entry Price', 'Stop Loss', 'Take Profit', 'Alasan Entry', 'Hasil', 'Created At']
+    ];
+    entries.forEach(e => {
+      ws_data.push([
+        e.teknik,
+        e.jamEntry,
+        e.posisi,
+        e.pair,
+        e.entryPrice,
+        e.stopLoss,
+        e.takeProfit,
+        e.alasanEntry,
+        e.hasil,
+        new Date(e.createdAt).toLocaleString()
+      ]);
+    });
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Entries');
+    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    saveAs(new Blob([wbout], {type:"application/octet-stream"}), `TraderZero_Backtesting_${currentUser}.xlsx`);
+    showSuccessToast('Data berhasil diekspor ke Excel');
+  });
+
+  // Export PDF (using jsPDF + html2canvas)
+  exportPDFBtn.addEventListener('click', async () => {
+    if(entries.length === 0) {
+      showErrorToast('Tidak ada data untuk diekspor');
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'pt',
+      format: 'a4',
+      putOnlyUsedFonts:true,
+      floatPrecision: 16
+    });
+
+    // Title
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(22);
+    pdf.setTextColor(0, 255, 255);
+    pdf.text(`TraderZero Backtesting Data - ${currentUser}`, 40, 40);
+
+    // Capture table
+    const tableEl = document.querySelector('#entriesTable');
+    const tableCanvas = await html2canvas(tableEl, {backgroundColor: '#000000'});
+    const tableImgData = tableCanvas.toDataURL('image/png');
+
+    // Capture line chart
+    const lineChartEl = document.getElementById('lineChart');
+    const lineChartCanvas = lineChartEl;
+    const lineChartImgData = lineChartCanvas.toDataURL('image/png');
+
+    // Capture pie chart
+    const pieChartEl = document.getElementById('pieChart');
+    const pieChartCanvas = pieChartEl;
+    const pieChartImgData = pieChartCanvas.toDataURL('image/png');
+
+    // Add table image
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 40;
+    const maxWidth = pageWidth - margin * 2;
+    const maxHeight = pageHeight - 150;
+
+    // Draw table image
+    pdf.addImage(tableImgData, 'PNG', margin, 60, maxWidth, maxHeight * 0.6);
+
+    // Draw charts below table
+    const chartWidth = (maxWidth - 20) / 2;
+    const chartHeight = maxHeight * 0.35;
+
+    pdf.addImage(lineChartImgData, 'PNG', margin, 60 + maxHeight * 0.6 + 10, chartWidth, chartHeight);
+    pdf.addImage(pieChartImgData, 'PNG', margin + chartWidth + 20, 60 + maxHeight * 0.6 + 10, chartWidth, chartHeight);
+
+    pdf.save(`TraderZero_Backtesting_${currentUser}.pdf`);
+    showSuccessToast('Data berhasil diekspor ke PDF');
+  });
+
+  // Backup data to JSON file
+  backupBtn.addEventListener('click', () => {
+    if(!currentUser) {
+      showErrorToast('User belum login');
+      return;
+    }
+    const data = {
+      user: currentUser,
+      entries
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    saveAs(blob, `TraderZero_Backup_${currentUser}.json`);
+    showSuccessToast('Backup berhasil dibuat');
+  });
+
+  // Restore data from JSON file
+  restoreInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      try {
+        const data = JSON.parse(evt.target.result);
+        if(!data.user || !Array.isArray(data.entries)) throw new Error('File tidak valid');
+        if(data.user !== currentUser) {
+          showErrorToast('File backup bukan untuk user ini');
+          restoreInput.value = '';
+          return;
+        }
+        entries = data.entries;
+        saveEntries();
+        applyFilters();
+        renderTable();
+        updateStatistics();
+        updateCharts();
+        showSuccessToast('✅ Catatan berhasil dipulihkan');
+        restoreInput.value = '';
+      } catch {
+        showErrorToast('⚠️ File tidak valid');
+        restoreInput.value = '';
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // Format number: remove trailing zeros after decimal, max 4 decimals
+  function formatNumber(num) {
+    if(typeof num !== 'number') return '';
+    return parseFloat(num.toFixed(4)).toString();
+  }
+
+  // Initialize app after login
+  function initApp() {
+    loadDarkMode();
+    applyFilters();
+    renderTable();
+    updateStatistics();
+    updateCharts();
+    updateSortIcons();
+  }
+
+  // Initial check for logged in user
+  function checkLogin() {
+    const savedUser = localStorage.getItem('tz-currentUser');
+    if(savedUser) {
+      currentUser = savedUser;
+      loadEntries();
+      userDisplay.textContent = `User: ${currentUser}`;
+      loginScreen.style.display = 'none';
+      app.style.display = 'flex';
+      hideSplashScreen();
+      navDashboard.click();
+      initApp();
+    } else {
+      loginScreen.style.display = 'flex';
+      app.style.display = 'none';
+      usernameInput.focus();
+    }
+  }
+
+  // Overlay Trading Background Animation
+  // We'll simulate a candlestick + line chart moving from right to left in neon blue and red colors
+  // Using simple random walk for price data
+
+  let overlayWidth = overlayCanvas.width;
+  let overlayHeight = overlayCanvas.height;
+  const candleWidth = 8;
+  const candleGap = 4;
+  let maxCandles = Math.floor(overlayWidth / (candleWidth + candleGap)) + 5;
+
+  let priceData = [];
+  let basePrice = 100;
+  let volatility = 1.5;
+  let lastPrice = basePrice;
+
+  // Initialize price data with random walk
+  function initPriceData() {
+    priceData = [];
+    for(let i=0; i<maxCandles; i++) {
+      const open = lastPrice;
+      const close = open + (Math.random() - 0.5) * volatility * 2;
+      const high = Math.max(open, close) + Math.random() * volatility;
+      const low = Math.min(open, close) - Math.random() * volatility;
+      priceData.push({open, close, high, low});
+      lastPrice = close;
+    }
+  }
+  initPriceData();
+
+  // Draw candlestick chart on overlay
+  function drawOverlayChart() {
+    overlayCtx.clearRect(0, 0, overlayWidth, overlayHeight);
+
+    // Background black with subtle gradient
+    const bgGradient = overlayCtx.createLinearGradient(0, 0, 0, overlayHeight);
+    bgGradient.addColorStop(0, 'rgba(0,0,0,0.9)');
+    bgGradient.addColorStop(1, 'rgba(0,0,0,0.7)');
+    overlayCtx.fillStyle = bgGradient;
+    overlayCtx.fillRect(0, 0, overlayWidth, overlayHeight);
+
+    // Calculate price range for scaling
+    const allPrices = priceData.flatMap(c => [c.high, c.low]);
+    const maxPrice = Math.max(...allPrices);
+    const minPrice = Math.min(...allPrices);
+    const priceRange = maxPrice - minPrice;
+
+    // Draw candlesticks from right to left
+    for(let i=0; i<priceData.length; i++) {
+      const c = priceData[i];
+      const x = overlayWidth - (i + 1) * (candleWidth + candleGap);
+      const openY = overlayHeight - ((c.open - minPrice) / priceRange) * overlayHeight;
+      const closeY = overlayHeight - ((c.close - minPrice) / priceRange) * overlayHeight;
+      const highY = overlayHeight - ((c.high - minPrice) / priceRange) * overlayHeight;
+      const lowY = overlayHeight - ((c.low - minPrice) / priceRange) * overlayHeight;
+
+      // Candle color neon blue if close >= open, else neon red
+      const isBull = c.close >= c.open;
+      overlayCtx.strokeStyle = isBull ? '#00ffff' : '#ff0033';
+      overlayCtx.fillStyle = isBull ? 'rgba(0,255,255,0.7)' : 'rgba(255,0,51,0.7)';
+      overlayCtx.lineWidth = 2;
+
+      // Draw wick
+      overlayCtx.beginPath();
+      overlayCtx.moveTo(x + candleWidth/2, highY);
+      overlayCtx.lineTo(x + candleWidth/2, lowY);
+      overlayCtx.stroke();
+
+      // Draw body
+      const bodyTop = Math.min(openY, closeY);
+      const bodyHeight = Math.max(1, Math.abs(closeY - openY));
+      overlayCtx.fillRect(x, bodyTop, candleWidth, bodyHeight);
+      overlayCtx.strokeRect(x, bodyTop, candleWidth, bodyHeight);
+    }
+
+    // Draw neon line chart on top (closing prices)
+    overlayCtx.beginPath();
+    overlayCtx.lineWidth = 3;
+    overlayCtx.strokeStyle = '#00ffff';
+    overlayCtx.shadowColor = '#00ffff';
+    overlayCtx.shadowBlur = 12;
+
+    for(let i=0; i<priceData.length; i++) {
+      const c = priceData[i];
+      const x = overlayWidth - (i + 1) * (candleWidth + candleGap) + candleWidth/2;
+      const y = overlayHeight - ((c.close - minPrice) / priceRange) * overlayHeight;
+      if(i === 0) {
+        overlayCtx.moveTo(x, y);
+      } else {
+        overlayCtx.lineTo(x, y);
+      }
+    }
+    overlayCtx.stroke();
+
+    // Draw subtle red line chart (low prices) with less opacity
+    overlayCtx.beginPath();
+    overlayCtx.lineWidth = 2;
+    overlayCtx.strokeStyle = 'rgba(255,0,51,0.3)';
+    overlayCtx.shadowColor = 'rgba(255,0,51,0.3)';
+    overlayCtx.shadowBlur = 8;
+
+    for(let i=0; i<priceData.length; i++) {
+      const c = priceData[i];
+      const x = overlayWidth - (i + 1) * (candleWidth + candleGap) + candleWidth/2;
+      const y = overlayHeight - ((c.low - minPrice) / priceRange) * overlayHeight;
+      if(i === 0) {
+        overlayCtx.moveTo(x, y);
+      } else {
+        overlayCtx.lineTo(x, y);
+      }
+    }
+    overlayCtx.stroke();
+  }
+
+  // Animate overlay chart by shifting data left and adding new candle
+  function animateOverlay() {
+    // Shift price data left by one
+    priceData.shift();
+
+    // Generate new candle based on last price
+    const lastCandle = priceData[priceData.length - 1];
+    const open = lastCandle.close;
+    const close = open + (Math.random() - 0.5) * volatility * 2;
+    const high = Math.max(open, close) + Math.random() * volatility;
+    const low = Math.min(open, close) - Math.random() * volatility;
+    priceData.push({open, close, high, low});
+
+    drawOverlayChart();
+  }
+
+  // Start overlay animation loop
+  function startOverlayAnimation() {
+    drawOverlayChart();
+    setInterval(animateOverlay, 1200);
+  }
+
+  // Weekly/Monthly toggle buttons
+  btnWeekly.addEventListener('click', () => {
+    if(currentWinrateView !== 'weekly') {
+      currentWinrateView = 'weekly';
+      btnWeekly.classList.add('active');
+      btnMonthly.classList.remove('active');
+      updateCharts();
+    }
+  });
+  btnMonthly.addEventListener('click', () => {
+    if(currentWinrateView !== 'monthly') {
+      currentWinrateView = 'monthly';
+      btnMonthly.classList.add('active');
+      btnWeekly.classList.remove('active');
+      updateCharts();
+    }
+  });
+
+  // Initialize
+  checkLogin();
+  startOverlayAnimation();
+
+})();
+</script>
+</body>
+  </html>
